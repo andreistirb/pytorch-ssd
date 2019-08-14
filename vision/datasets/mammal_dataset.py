@@ -12,6 +12,7 @@ from torch.utils.data import Dataset
 class MammalDataset(Dataset):
     
     def __init__(self, root_path, annotation_file_path, transform=None, target_transform=None):
+        self.root_path = root_path
         self.annotation_file = annotation_file_path
         self.transform = transform
         self.target_transform = target_transform
@@ -25,6 +26,7 @@ class MammalDataset(Dataset):
         json_data = json.load(json_file)
 
         categories = json_data["categories"]
+        #print(len(categories))
         for category in categories:
             self.categories[category["id"]] = category["name"]
 
@@ -32,26 +34,35 @@ class MammalDataset(Dataset):
         for img in images:
             self.images[img["id"]] = img["file_name"]
 
-        self.imgs_idx = self.images.keys()
+        self.imgs_idx = list(self.images.keys())
+        #print(type(self.imgs_idx))
         
         annotations = json_data["annotations"]
         for annotation in annotations:
             self.annotations[annotation["image_id"]].append((annotation["bbox"], annotation["category_id"]))
+        #print(len(annotations))
+        #print(len(self.imgs_idx))
 
-    def __get_item__(self, index):
+    def __getitem__(self, index):
         
         image_id = self.imgs_idx[index]
-        image_path = self.images[image_id]
+        image_path = self.root_path + "/" + self.images[image_id]
 
         image = cv2.imread(str(image_path))
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         annotations = self.annotations[image_id]
         boxes, labels = map(list, zip(*annotations))
 
         boxes = self.convert_box(boxes)
-        boxes = np.array(boxes)
+        #for box in boxes:
+        #    cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), (0, 255, 0))
 
+        #cv2.imshow("Imagine", image)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+
+        boxes = np.array(boxes)
         labels = np.array(labels)
         
         if self.transform:
@@ -64,14 +75,14 @@ class MammalDataset(Dataset):
         return index
 
     def __len__(self):
-        return 2
+        return len(self.imgs_idx)
 
     def convert_box(self, boxes):
         boxes_return = []
         for box in boxes:
             m_box = box
             m_box[2] = m_box[0] + m_box[2]
-            m_box[3] = m_box[3] + m_box[3]
+            m_box[3] = m_box[1] + m_box[3]
             boxes_return.append(m_box)
         return boxes_return
 
