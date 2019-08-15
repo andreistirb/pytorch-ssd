@@ -1,0 +1,1 @@
+ python train_ssd.py --dataset_type mammals --datasets D:/Datasets/iNaturalist2017/ --validation_dataset D:/Datasets/iNaturalist2017/ --net mb2-ssd-lite --batch_size 2 --num_workers 1

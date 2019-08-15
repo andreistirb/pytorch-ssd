@@ -49,7 +49,7 @@ class MammalDataset(Dataset):
         image_path = self.root_path + "/" + self.images[image_id]
 
         image = cv2.imread(str(image_path))
-        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         annotations = self.annotations[image_id]
         boxes, labels = map(list, zip(*annotations))
@@ -62,7 +62,7 @@ class MammalDataset(Dataset):
         #cv2.waitKey(0)
         #cv2.destroyAllWindows()
 
-        boxes = np.array(boxes)
+        boxes = np.array(boxes, dtype=np.float32)
         labels = np.array(labels)
         
         if self.transform:

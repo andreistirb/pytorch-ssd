@@ -10,6 +10,7 @@ class TrainAugmentation:
         """
         self.mean = mean
         self.size = size
+        self.std = std
         self.augment = Compose([
             ConvertFromInts(),
             PhotometricDistort(),
@@ -19,7 +20,7 @@ class TrainAugmentation:
             ToPercentCoords(),
             Resize(self.size),
             SubtractMeans(self.mean),
-            lambda img, boxes=None, labels=None: (img / std, boxes, labels),
+            NormalizesStd(self.std),
             ToTensor(),
         ])
 
@@ -40,7 +41,7 @@ class TestTransform:
             ToPercentCoords(),
             Resize(size),
             SubtractMeans(mean),
-            lambda img, boxes=None, labels=None: (img / std, boxes, labels),
+            NormalizesStd(std),
             ToTensor(),
         ])
 

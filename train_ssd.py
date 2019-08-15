@@ -116,8 +116,11 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     for i, data in enumerate(loader):
         images, boxes, labels = data
         images = images.to(device)
+        #images = images.permute(0, 3, 1, 2).float()
+        #print(images.shape)
         boxes = boxes.to(device)
         labels = labels.to(device)
+        labels = labels.long()
 
         optimizer.zero_grad()
         confidence, locations = net(images)
@@ -215,8 +218,10 @@ if __name__ == '__main__':
             logging.info(dataset)
             num_classes = len(dataset.class_names)
         elif args.dataset_type == "mammals":
+            ## no transforms
             dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_train_2017_boxes.json",
                  transform=train_transform, target_transform=target_transform)
+            #dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_train_2017_boxes.json")
             label_file = os.path.join(args.checkpoint_folder, "EMPTY")
             num_classes = len(dataset.categories.keys())
 
@@ -239,8 +244,10 @@ if __name__ == '__main__':
                                         dataset_type="test")
         logging.info(val_dataset)
     elif args.dataset_type == 'mammals':
+        # no transforms
         val_dataset = MammalDataset(args.validation_dataset, args.validation_dataset + "/" +  "mammal_val_2017_boxes.json",
                                     transform=test_transform, target_transform=target_transform)
+        #val_dataset = MammalDataset(args.validation_dataset, args.validation_dataset + "/" +  "mammal_val_2017_boxes.json")
     logging.info("validation dataset size: {}".format(len(val_dataset)))
 
     val_loader = DataLoader(val_dataset, args.batch_size,

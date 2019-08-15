@@ -81,6 +81,15 @@ class SubtractMeans(object):
         image -= self.mean
         return image.astype(np.float32), boxes, labels
 
+class NormalizesStd(object):
+    def __init__(self, std):
+        self.std = np.array(std, dtype=np.float32)
+
+    def __call__(self, image, boxes=None, labels=None):
+        image = image.astype(np.float32)
+        image /= self.std
+        return image.astype(np.float32), boxes, labels
+
 
 class ToAbsoluteCoords(object):
     def __call__(self, image, boxes=None, labels=None):
