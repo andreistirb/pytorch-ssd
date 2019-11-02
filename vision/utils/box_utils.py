@@ -100,6 +100,7 @@ def convert_locations_to_boxes(locations, priors, center_variance,
     # priors can have one dimension less.
     if priors.dim() + 1 == locations.dim():
         priors = priors.unsqueeze(0)
+    #priors = priors.to(torch.device("cpu"))
     return torch.cat([
         locations[..., :2] * center_variance * priors[..., 2:] + priors[..., :2],
         torch.exp(locations[..., 2:] * size_variance) * priors[..., 2:]
@@ -175,6 +176,7 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
     # size: num_priors
     labels = gt_labels[best_target_per_prior_index]
     labels[best_target_per_prior < iou_threshold] = 0  # the backgournd id
+    # maybe here put 0 for boxes of background....!!!
     boxes = gt_boxes[best_target_per_prior_index]
     return boxes, labels
 

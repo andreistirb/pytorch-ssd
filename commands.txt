@@ -1,1 +1,8 @@
- python train_ssd.py --dataset_type mammals --datasets D:/Datasets/iNaturalist2017/ --validation_dataset D:/Datasets/iNaturalist2017/ --net mb2-ssd-lite --batch_size 2 --num_workers 1
+python train_ssd.py --dataset_type mammals --datasets D:/Datasets/iNaturalist2017/ --validation_dataset D:/Datasets/iNaturalist2017/ --net mb2-ssd-lite --batch_size 2 --num_epochs 10
+
+python train_ssd.py --dataset_type mammals --datasets D:/Datasets/iNaturalist2017/ --validation_dataset D:/Datasets/iNaturalist2017/ --net mb1-ssd --batch_size 2 --num_epochs 10 --base_net models/mobilenet-v1-ssd-mp-0_675.pth
+
+
+Aspect ratio: 1.6972118616104126
+Landscape: 11368
+Portrait: 19741

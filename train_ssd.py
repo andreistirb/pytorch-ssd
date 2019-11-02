@@ -1,28 +1,29 @@
 import argparse
-import os
-import logging
-import sys
 import itertools
+import logging
+import os
+import sys
+from tensorboardX import SummaryWriter
 
 import torch
-from torch.utils.data import DataLoader, ConcatDataset
 from torch.optim.lr_scheduler import CosineAnnealingLR, MultiStepLR
+from torch.utils.data import DataLoader, ConcatDataset
 
-from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels
-from vision.ssd.ssd import MatchPrior
-from vision.ssd.vgg_ssd import create_vgg_ssd
-from vision.ssd.mobilenetv1_ssd import create_mobilenetv1_ssd
-from vision.ssd.mobilenetv1_ssd_lite import create_mobilenetv1_ssd_lite
-from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite
-from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
-from vision.datasets.voc_dataset import VOCDataset
-from vision.datasets.open_images import OpenImagesDataset
 from vision.datasets.mammal_dataset import MammalDataset
+from vision.datasets.open_images import OpenImagesDataset
+from vision.datasets.voc_dataset import VOCDataset
 from vision.nn.multibox_loss import MultiboxLoss
 from vision.ssd.config import vgg_ssd_config
 from vision.ssd.config import mobilenetv1_ssd_config
 from vision.ssd.config import squeezenet_ssd_config
 from vision.ssd.data_preprocessing import TrainAugmentation, TestTransform
+from vision.ssd.mobilenetv1_ssd import create_mobilenetv1_ssd
+from vision.ssd.mobilenetv1_ssd_lite import create_mobilenetv1_ssd_lite
+from vision.ssd.mobilenet_v2_ssd_lite import create_mobilenetv2_ssd_lite
+from vision.ssd.squeezenet_ssd_lite import create_squeezenet_ssd_lite
+from vision.ssd.ssd import MatchPrior
+from vision.ssd.vgg_ssd import create_vgg_ssd
+from vision.utils.misc import str2bool, Timer, freeze_net_layers, store_labels
 
 parser = argparse.ArgumentParser(
     description='Single Shot MultiBox Detector Training With Pytorch')
@@ -107,6 +108,8 @@ if args.use_cuda and torch.cuda.is_available():
     torch.backends.cudnn.benchmark = True
     logging.info("Use Cuda.")
 
+# TO-DO add a summary writer for Tensorboard
+#train_writer = SummaryWriter()
 
 def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     net.train(True)
@@ -116,8 +119,6 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
     for i, data in enumerate(loader):
         images, boxes, labels = data
         images = images.to(device)
-        #images = images.permute(0, 3, 1, 2).float()
-        #print(images.shape)
         boxes = boxes.to(device)
         labels = labels.to(device)
         labels = labels.long()
@@ -133,6 +134,7 @@ def train(loader, net, criterion, optimizer, device, debug_steps=100, epoch=-1):
         running_regression_loss += regression_loss.item()
         running_classification_loss += classification_loss.item()
         if i and i % debug_steps == 0:
+            # TO-DO add support for visualizing training process
             avg_loss = running_loss / debug_steps
             avg_reg_loss = running_regression_loss / debug_steps
             avg_clf_loss = running_classification_loss / debug_steps
@@ -158,6 +160,7 @@ def test(loader, net, criterion, device):
         images = images.to(device)
         boxes = boxes.to(device)
         labels = labels.to(device)
+        labels = labels.long()
         num += 1
 
         with torch.no_grad():
@@ -218,12 +221,10 @@ if __name__ == '__main__':
             logging.info(dataset)
             num_classes = len(dataset.class_names)
         elif args.dataset_type == "mammals":
-            ## no transforms
-            dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_train_2017_boxes.json",
+            dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_val_2017_boxes.json",
                  transform=train_transform, target_transform=target_transform)
-            #dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_train_2017_boxes.json")
             label_file = os.path.join(args.checkpoint_folder, "EMPTY")
-            num_classes = len(dataset.categories.keys())
+            num_classes = len(dataset.categories.keys()) + 1 # we add 1 for background
 
         else:
             raise ValueError(f"Dataset tpye {args.dataset_type} is not supported.")
@@ -234,6 +235,7 @@ if __name__ == '__main__':
     train_loader = DataLoader(datasets[0], args.batch_size,
                               num_workers=args.num_workers,
                               shuffle=True)
+       
     logging.info("Prepare Validation datasets.")
     if args.dataset_type == "voc":
         val_dataset = VOCDataset(args.validation_dataset, transform=test_transform,
@@ -244,10 +246,8 @@ if __name__ == '__main__':
                                         dataset_type="test")
         logging.info(val_dataset)
     elif args.dataset_type == 'mammals':
-        # no transforms
         val_dataset = MammalDataset(args.validation_dataset, args.validation_dataset + "/" +  "mammal_val_2017_boxes.json",
                                     transform=test_transform, target_transform=target_transform)
-        #val_dataset = MammalDataset(args.validation_dataset, args.validation_dataset + "/" +  "mammal_val_2017_boxes.json")
     logging.info("validation dataset size: {}".format(len(val_dataset)))
 
     val_loader = DataLoader(val_dataset, args.batch_size,

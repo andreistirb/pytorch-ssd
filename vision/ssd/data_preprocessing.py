@@ -11,7 +11,7 @@ class TrainAugmentation:
         self.mean = mean
         self.size = size
         self.std = std
-        self.augment = Compose([
+        '''self.augment = Compose([
             ConvertFromInts(),
             PhotometricDistort(),
             Expand(self.mean),
@@ -21,6 +21,13 @@ class TrainAugmentation:
             Resize(self.size),
             SubtractMeans(self.mean),
             NormalizesStd(self.std),
+            ToTensor(),
+        ])'''
+        # TO-DO add augmentations from above, without Subtract means and normalizes std, do it yourself in [-1,1]
+        self.augment = Compose([
+            ConvertFromInts(),
+            ToPercentCoords(),
+            Resize(self.size),
             ToTensor(),
         ])
 

@@ -31,7 +31,7 @@ class Predictor:
         height, width, _ = image.shape
         image = self.transform(image)
         images = image.unsqueeze(0)
-        images = images.to(self.device)
+        #images = images.to(torch.device("cuda"))
         with torch.no_grad():
             self.timer.start()
             scores, boxes = self.net.forward(images)
@@ -45,6 +45,7 @@ class Predictor:
         scores = scores.to(cpu_device)
         picked_box_probs = []
         picked_labels = []
+        # we start from 1 because class 0 is background
         for class_index in range(1, scores.size(1)):
             probs = scores[:, class_index]
             mask = probs > prob_threshold
