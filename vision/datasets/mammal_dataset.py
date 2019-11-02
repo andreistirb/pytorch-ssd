@@ -9,6 +9,9 @@ import pathlib
 import torch
 from torch.utils.data import Dataset
 
+from ..utils import box_utils
+from ..ssd.config import mobilenetv1_ssd_config as config
+
 class MammalDataset(Dataset):
 
     def __init__(self, root_path, annotation_file_path, transform=None, target_transform=None):
@@ -35,7 +38,7 @@ class MammalDataset(Dataset):
             self.categories[category["id"]] = category["name"]
             self.category_to_index[category["id"]] = index
             self.index_to_category[index] = category["id"]
-            index += 1
+            #index += 1
 
         images = json_data["images"]
         for img in images:
@@ -53,6 +56,8 @@ class MammalDataset(Dataset):
         image_path = self.root_path + "/" + self.images[image_id]
 
         image = cv2.imread(str(image_path))
+        height, width, channels = image.shape
+        cv_image = image.copy()
         #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)        
 
         annotations = self.annotations[image_id]
@@ -61,14 +66,10 @@ class MammalDataset(Dataset):
         boxes = self.convert_box(boxes)
 
         # For display purpose
-        #for box in boxes:
-        #    cv2.rectangle(write_img, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
+        for box in boxes:
+            cv2.rectangle(cv_image, (box[0], box[1]), (box[2], box[3]), (0, 255, 0), 2)
         #print(self.root_path + "/box/" + self.images[image_id])
         #cv2.imwrite(self.root_path + "/box/" + self.images[image_id], write_img)
-
-        #cv2.imshow("Imagine", write_img)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
 
         boxes = np.array(boxes, dtype=np.float32)
         labels = np.array(labels)
@@ -78,10 +79,36 @@ class MammalDataset(Dataset):
         if self.target_transform:
             boxes, labels = self.target_transform(boxes, labels)
 
+        plot_boxes = boxes.clone()
+        plot_boxes = box_utils.convert_locations_to_boxes(plot_boxes, config.priors, config.center_variance,
+                                                          config.size_variance)
+
+        plot_priors = config.priors[labels.nonzero()]
+        plot_priors = box_utils.center_form_to_corner_form(plot_priors)
+        #plot_priors = plot_boxes[labels.nonzero()]
+        plot_priors = np.array(plot_priors.data).squeeze()
+        print(len(plot_priors.shape))
+        if len(plot_priors.shape) == 1:
+            xmin, ymin, xmax, ymax = plot_priors[0], plot_priors[1], plot_priors[2], plot_priors[3]
+            cv2.rectangle(cv_image, (int(xmin * width), int(ymin * height)), (int(xmax * width), int(ymax * height)),
+                          (0, 0, 255), 2)
+        else:
+            for box in plot_priors:
+                xmin, ymin, xmax, ymax = box[0], box[1], box[2], box[3]
+                cv2.rectangle(cv_image, (int(xmin * width), int(ymin * height)), (int(xmax * width), int(ymax * height)), (0, 0, 255), 2)
+
+        # here we should plot the associated priors to the actual object
+        #print(labels.nonzero())
+
         #cv_img = image.numpy()
         #cv_img = np.transpose(cv_img, (1,2,0))
         #cv2.imwrite("images/" + str(index) + ".jpg", cv_img)
         #print(image.shape)
+
+        #cv2.imshow("Imagine", cv_image)
+        #cv2.waitKey(0)
+        #cv2.destroyAllWindows()
+        cv.imwrite(self.root_path + "/priors/" + self.images[image_id], cv_image)
         return image, boxes, labels
 
     def get_image(self, index):

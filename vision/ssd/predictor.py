@@ -31,7 +31,7 @@ class Predictor:
         height, width, _ = image.shape
         image = self.transform(image)
         images = image.unsqueeze(0)
-        #images = images.to(torch.device("cuda"))
+        images = images.to(torch.device("cuda"))
         with torch.no_grad():
             self.timer.start()
             scores, boxes = self.net.forward(images)

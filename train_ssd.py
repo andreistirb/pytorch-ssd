@@ -199,7 +199,7 @@ if __name__ == '__main__':
         sys.exit(1)
     train_transform = TrainAugmentation(config.image_size, config.image_mean, config.image_std)
     target_transform = MatchPrior(config.priors, config.center_variance,
-                                  config.size_variance, 0.5)
+                                  config.size_variance, 0.65)
 
     test_transform = TestTransform(config.image_size, config.image_mean, config.image_std)
 
@@ -224,7 +224,7 @@ if __name__ == '__main__':
             dataset = MammalDataset(dataset_path, dataset_path + "/" + "mammal_val_2017_boxes.json",
                  transform=train_transform, target_transform=target_transform)
             label_file = os.path.join(args.checkpoint_folder, "EMPTY")
-            num_classes = len(dataset.categories.keys()) + 1 # we add 1 for background
+            num_classes = 2#len(dataset.categories.keys()) + 1 # we add 1 for background
 
         else:
             raise ValueError(f"Dataset tpye {args.dataset_type} is not supported.")
